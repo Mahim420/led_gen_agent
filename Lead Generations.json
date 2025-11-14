@@ -1,0 +1,415 @@
+{
+  "name": "Lead Generations",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Lead Gen AI",
+        "formDescription": "Please EntAn intelligent lead generation agent that automatically collects, filters, and qualifies potential customer data from various sources such as websites, social media, and forms. It analyzes leads based on predefined criteria, prioritizes high-value prospects, and delivers real-time insights to boost sales efficiency and conversion rates.er your app name",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Search Query",
+              "placeholder": "What about lead GEN",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Location",
+              "placeholder": "Enter what country you want to generate lead",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Total lead Gen",
+              "placeholder": "How many lead you want (1-100)",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "placeholder": "Enter your Email",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e02d0de4-5d79-4200-baca-13d6565b0840",
+      "name": "On form submission",
+      "webhookId": "f7e16c00-1d2e-461a-a188-1ad8fc059d3a"
+    },
+    {
+      "parameters": {
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "https://console.apify.com/actors/2Mdma1N6Fd0y3QEjR/input",
+          "mode": "url"
+        },
+        "customBody": "={\n    \"language\": \"en\",\n    \"locationQuery\": \"{{ $json.Location }}\",\n    \"maxCrawledPlacesPerSearch\": {{ $json['Total lead Gen'] }},\n    \"searchStringsArray\": [\n        \"{{ $json['Search Query'] }}\"\n    ],\n    \"skipClosedPlaces\": false\n}"
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "07122496-ed94-48bf-879b-27a46216ff3f",
+      "name": "Run an Actor",
+      "credentials": {
+        "apifyApi": {
+          "id": "oJC4mO1DSyd0OJFs",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Datasets",
+        "datasetId": "={{ $json.defaultDatasetId }}"
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "fb0be19c-c3cc-4426-b3e9-3a77d452b3ff",
+      "name": "Get dataset items",
+      "credentials": {
+        "apifyApi": {
+          "id": "oJC4mO1DSyd0OJFs",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7e71c8a4-5102-4925-9b9a-6147f9b5826c",
+              "leftValue": "={{ $json.permanentlyClosed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "ce19add8-95f4-4400-8e1c-15b61c61ff7a",
+              "leftValue": "={{ $json.temporarilyClosed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "24dc9bee-bb57-40a0-af8c-ff4c4ac6a766",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        832,
+        0
+      ],
+      "id": "9f3e660c-d85e-440f-b897-86bb9f24a078",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a business research assistant specialized in finding quick, relevant insights for outreach.\n\nGoal:\nResearch the business provided in the input and generate 3–5 short, high-value talking points that could be mentioned in an email or phone call.\n\nGuidelines:\n- Use the Gemini chat model for research.\n- Return concise, single-sentence insights only — no repetition of the given business info unless you find the owner’s or manager’s name.\n- Focus on notable facts like:\n- Reputation, reviews, or ratings\n- News, achievements, or awards\n- Community involvement or partnerships\n- Service specialties or unique offerings\n- Keep it brief and factual (under 20 words per item).\n\nExample format:\nFrank Pepe rated 8.5 by Dave Portnoy.\n\nBusiness Input JSON:\n\n{\n  \"title\": \"{{ $json.title }}\",\n  \"website\": \"{{ $json.website }}\",\n  \"phone\": \"{{ $json.phone }}\",\n  \"address\": \"{{ $json.address }}\"\n}\n\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        16
+      ],
+      "id": "85341d9f-5f90-4931-bad5-4433f31e5c27",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        576,
+        -240
+      ],
+      "id": "aed0503e-a884-4ad1-ba2d-6d042f69aff8",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "yxvOm1ZjzHgIQbQE",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "app6E4KjAe0faAa3Y",
+          "mode": "list",
+          "cachedResultName": "Collect lead",
+          "cachedResultUrl": "https://airtable.com/app6E4KjAe0faAa3Y"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblBRLqV2vHDKGcUK",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/app6E4KjAe0faAa3Y/tblBRLqV2vHDKGcUK"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Business Name": "={{ $('Filter').item.json.title }}",
+            "Domain Name": "={{ $('Filter').item.json.website }}",
+            "Phone Number": "=\"{{ $('Filter').item.json.phone }}\" + \"{{ $('Filter').item.json.phoneUnformatted }}\"",
+            "Adress": "={{ $('Filter').item.json.address }}",
+            "Review": "={{ String($('Filter').item.json.reviewsCount) }}",
+            "Map Details": "={{ $('Filter').item.json.url }}",
+            "Business Details": "={{ $json.output }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Business Name",
+              "displayName": "Business Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Domain Name",
+              "displayName": "Domain Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Adress",
+              "displayName": "Adress",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Review",
+              "displayName": "Review",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Map Details",
+              "displayName": "Map Details",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Business Details",
+              "displayName": "Business Details",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1408,
+        16
+      ],
+      "id": "15eb9a64-8e5e-47fd-b48b-91b509c918b2",
+      "name": "Create a record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "iAOC9hRMSakLJ4VP",
+          "name": "Airtable Personal Access Token account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Run an Actor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run an Actor": {
+      "main": [
+        [
+          {
+            "node": "Get dataset items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get dataset items": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a record": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7de4796b-cafe-43a3-b47b-45a0c461f97b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5f7dd2640e86f821baa466d6d436a813f7787f272efb9dd74dacf148bfea71c4"
+  },
+  "id": "ch0nbLzSMVGR1pij",
+  "tags": []
+}
